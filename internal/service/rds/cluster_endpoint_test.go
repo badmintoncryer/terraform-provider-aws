@@ -229,7 +229,7 @@ resource "aws_rds_cluster_endpoint" "writer" {
   cluster_endpoint_identifier = "%[1]s-writer"
   custom_endpoint_type        = "WRITER"
 
-  static_members = [aws_rds_cluster_instance.test2.id]
+  static_members = [aws_rds_cluster_instance.test1.id]
 }
 
 resource "aws_rds_cluster_endpoint" "default" {
