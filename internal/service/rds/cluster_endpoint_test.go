@@ -28,8 +28,10 @@ func TestAccRDSClusterEndpoint_basic(t *testing.T) {
 
 	rName := sdkacctest.RandomWithPrefix(acctest.ResourcePrefix)
 	var customReaderEndpoint types.DBClusterEndpoint
+	var customWriterEndpoint types.DBClusterEndpoint
 	var customEndpoint types.DBClusterEndpoint
 	readerResourceName := "aws_rds_cluster_endpoint.reader"
+	writerResourceName := "aws_rds_cluster_endpoint.writer"
 	defaultResourceName := "aws_rds_cluster_endpoint.default"
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -42,13 +44,17 @@ func TestAccRDSClusterEndpoint_basic(t *testing.T) {
 				Config: testAccClusterEndpointConfig_basic(rName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckClusterEndpointExists(ctx, readerResourceName, &customReaderEndpoint),
+					testAccCheckClusterEndpointExists(ctx, writerResourceName, &customWriterEndpoint),
 					testAccCheckClusterEndpointExists(ctx, defaultResourceName, &customEndpoint),
 					acctest.MatchResourceAttrRegionalARN(ctx, readerResourceName, names.AttrARN, "rds", regexache.MustCompile(`cluster-endpoint:.+`)),
 					resource.TestCheckResourceAttrSet(readerResourceName, names.AttrEndpoint),
+					acctest.MatchResourceAttrRegionalARN(ctx, writerResourceName, names.AttrARN, "rds", regexache.MustCompile(`cluster-endpoint:.+`)),
+					resource.TestCheckResourceAttrSet(writerResourceName, names.AttrEndpoint),
 					acctest.MatchResourceAttrRegionalARN(ctx, defaultResourceName, names.AttrARN, "rds", regexache.MustCompile(`cluster-endpoint:.+`)),
 					resource.TestCheckResourceAttrSet(defaultResourceName, names.AttrEndpoint),
 					resource.TestCheckResourceAttr(defaultResourceName, acctest.CtTagsPercent, "0"),
 					resource.TestCheckResourceAttr(readerResourceName, acctest.CtTagsPercent, "0"),
+					resource.TestCheckResourceAttr(writerResourceName, acctest.CtTagsPercent, "0"),
 				),
 			},
 			{
@@ -56,7 +62,11 @@ func TestAccRDSClusterEndpoint_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-
+			{
+				ResourceName:      writerResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 			{
 				ResourceName:      defaultResourceName,
 				ImportState:       true,
@@ -210,6 +220,14 @@ resource "aws_rds_cluster_endpoint" "reader" {
   cluster_identifier          = aws_rds_cluster.default.id
   cluster_endpoint_identifier = "%[1]s-reader"
   custom_endpoint_type        = "READER"
+
+  static_members = [aws_rds_cluster_instance.test2.id]
+}
+
+resource "aws_rds_cluster_endpoint" "writer" {
+  cluster_identifier          = aws_rds_cluster.default.id
+  cluster_endpoint_identifier = "%[1]s-writer"
+  custom_endpoint_type        = "WRITER"
 
   static_members = [aws_rds_cluster_instance.test2.id]
 }
