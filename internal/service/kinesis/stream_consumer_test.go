@@ -39,6 +39,8 @@ func TestAccKinesisStreamConsumer_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, names.AttrName, rName),
 					resource.TestCheckResourceAttrPair(resourceName, names.AttrStreamARN, streamName, names.AttrARN),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_timestamp"),
+					resource.TestCheckResourceAttr(resourceName, acctest.CtTagsPercent, "1"),
+					resource.TestCheckResourceAttr(resourceName, "tags.name", rName),
 				),
 			},
 			{
@@ -185,6 +187,9 @@ func testAccStreamConsumerConfig_basic(rName string) string {
 resource "aws_kinesis_stream_consumer" "test" {
   name       = %[1]q
   stream_arn = aws_kinesis_stream.test.arn
+	tags       = {
+    name = %[1]q
+  }
 }
 `, rName))
 }

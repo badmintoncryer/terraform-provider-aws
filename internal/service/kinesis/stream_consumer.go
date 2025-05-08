@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-provider-aws/internal/enum"
 	"github.com/hashicorp/terraform-provider-aws/internal/errs"
 	"github.com/hashicorp/terraform-provider-aws/internal/errs/sdkdiag"
+	tftags "github.com/hashicorp/terraform-provider-aws/internal/tags"
 	"github.com/hashicorp/terraform-provider-aws/internal/tfresource"
 	"github.com/hashicorp/terraform-provider-aws/internal/verify"
 	"github.com/hashicorp/terraform-provider-aws/names"
@@ -54,6 +55,8 @@ func resourceStreamConsumer() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: verify.ValidARN,
 			},
+			names.AttrTags:    tftags.TagsSchemaForceNew(),
+			names.AttrTagsAll: tftags.TagsSchemaComputed(),
 		},
 	}
 }
@@ -66,6 +69,14 @@ func resourceStreamConsumerCreate(ctx context.Context, d *schema.ResourceData, m
 	input := &kinesis.RegisterStreamConsumerInput{
 		ConsumerName: aws.String(name),
 		StreamARN:    aws.String(d.Get(names.AttrStreamARN).(string)),
+	}
+
+	if tags := getTagsIn(ctx); len(tags) > 0 {
+		tagsMap := make(map[string]string, len(tags))
+		for _, tag := range tags {
+			tagsMap[aws.ToString(tag.Key)] = aws.ToString(tag.Value)
+		}
+		input.Tags = tagsMap
 	}
 
 	output, err := conn.RegisterStreamConsumer(ctx, input)
