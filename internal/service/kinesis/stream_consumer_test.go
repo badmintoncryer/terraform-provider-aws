@@ -32,7 +32,7 @@ func TestAccKinesisStreamConsumer_basic(t *testing.T) {
 		CheckDestroy:             testAccCheckStreamConsumerDestroy(ctx),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccStreamConsumerConfig_basic(rName),
+				Config: testAccStreamConsumerConfig_basic(rName, acctest.CtTagsKey1, acctest.CtValue1),
 				Check: resource.ComposeTestCheckFunc(
 					testAccStreamConsumerExists(ctx, resourceName),
 					acctest.MatchResourceAttrRegionalARN(ctx, resourceName, names.AttrARN, "kinesis", regexache.MustCompile(fmt.Sprintf("stream/%[1]s/consumer/%[1]s", rName))),
@@ -40,13 +40,14 @@ func TestAccKinesisStreamConsumer_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceName, names.AttrStreamARN, streamName, names.AttrARN),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_timestamp"),
 					resource.TestCheckResourceAttr(resourceName, acctest.CtTagsPercent, "1"),
-					resource.TestCheckResourceAttr(resourceName, "tags.name", rName),
+					resource.TestCheckResourceAttr(resourceName, acctest.CtTagsKey1, acctest.CtValue1),
 				),
 			},
 			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{names.AttrTagsAll},
 			},
 		},
 	})
@@ -64,7 +65,7 @@ func TestAccKinesisStreamConsumer_disappears(t *testing.T) {
 		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccStreamConsumerConfig_basic(rName),
+				Config: testAccStreamConsumerConfig_basic(rName, acctest.CtTagsKey1, acctest.CtValue1),
 				Check: resource.ComposeTestCheckFunc(
 					testAccStreamConsumerExists(ctx, resourceName),
 					acctest.CheckResourceDisappears(ctx, acctest.Provider, tfkinesis.ResourceStreamConsumer(), resourceName),
@@ -182,16 +183,16 @@ resource "aws_kinesis_stream" "test" {
 `, rName)
 }
 
-func testAccStreamConsumerConfig_basic(rName string) string {
+func testAccStreamConsumerConfig_basic(rName, tagKey1, tagValue1 string) string {
 	return acctest.ConfigCompose(testAccStreamConsumerConfig_base(rName), fmt.Sprintf(`
 resource "aws_kinesis_stream_consumer" "test" {
   name       = %[1]q
   stream_arn = aws_kinesis_stream.test.arn
 	tags       = {
-    name = %[1]q
+    %[2]q = %[3]q
   }
 }
-`, rName))
+`, rName, tagKey1, tagValue1))
 }
 
 func testAccStreamConsumerConfig_multiple(rName string, count int) string {
